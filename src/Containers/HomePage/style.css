@@ -1,0 +1,17 @@
+.underscratch {
+    font-family: "Poppins", sans-serif;
+    position: relative;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+}
+
+.underscratch-yellow:before {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    content: "";
+    height: 2px;
+    width: 53px;
+    background-color: #f1c40f;
+}

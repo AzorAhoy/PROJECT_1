@@ -1,0 +1,12 @@
+nav.navbar.navbar-expand.navbar-light.bg-light {
+    background-color: #323A45;
+    
+}
+
+.icon {
+    /* background-image: url(https://www.igdb.com/apple-icon-72x72.png);
+    background-repeat: no-repeat; */
+    height: 70px;
+    /* width: 100%; */
+    padding-right: 70px;
+}
