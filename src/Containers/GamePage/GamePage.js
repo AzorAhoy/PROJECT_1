@@ -40,7 +40,11 @@ class GamePage extends Component {
         esrb: {},
         pegi: {},
         Rating: 0,
-        gameid:""
+        gameid: "",
+        avgUserRating: null,
+        userreviews: [],
+        avgCriticRating: null,
+        criticreviews: []
     }
 
     getRating = (r) => {
@@ -56,11 +60,30 @@ class GamePage extends Component {
         })
     }
 
-    componentWillMount() {
-        const id = "5db092c245d60247b48ae51e";
+    componentDidMount() {
+        console.log(this.props.match.params['id']);
+        const id = this.props.match.params['id'] ? this.props.match.params['id'] : "5db092c245d60247b48ae51e";
         this.setState({
             gameid: id
         })
+        axios.get("http://localhost:6900/api/userreview/" + id)
+            .then(data => {
+                const info = data.data.data;
+                console.log(data.data);
+                this.setState({
+                    avgUserRating: Math.round(data.data.avgUserRating * 10),
+                    userreviews: data.data.data
+                })
+            });
+        axios.get("http://localhost:6900/api/criticreview/" + id)
+            .then(data => {
+                const info = data.data.data;
+                console.log(data.data);
+                this.setState({
+                    avgCriticRating: data.data.avgCriticRating,
+                    criticreviews: data.data.data
+                })
+            });
         axios.get("http://localhost:6900/api/game/" + id)
             .then(data => {
                 const info = data.data.data;
@@ -92,7 +115,10 @@ class GamePage extends Component {
                     esrb: info.esrb,
                     pegi: info.pegi
                 })
+            }).catch(err => {
+                console.log(err);
             })
+
     }
 
     handleTab = (event) => {
@@ -121,19 +147,19 @@ class GamePage extends Component {
         }
     }
 
-    submit (event, rating) {
+    submit(event, rating) {
         const gameid = this.state.gameid;
         const pros = event.target.pros.value;
         const cons = event.target.cons.value;
         const review = event.target.review.value;
         const userid = this.state.user;
         event.preventDefault();
-        console.log(event.target.review.value);
-        console.log(event.target.pros.value);
-        console.log(event.target.cons.value);
-        console.log(rating);
-        console.log(this.state.user);
-        console.log(this.state.gameid);
+        // console.log(event.target.review.value);
+        // console.log(pros.replace(/^\s*\n/gm, ""));
+        // console.log(cons.replace(/^\s*\n/gm, ""));
+        // console.log(rating);
+        // console.log(this.state.user);
+
         axios({
             url: 'http://localhost:6900/api/userreview',
             method: 'POST',
@@ -141,8 +167,8 @@ class GamePage extends Component {
                 user: userid,
                 game: gameid,
                 review: review,
-                pros: pros,
-                cons: cons,
+                pros: pros.replace(/^\s*\n/gm, "").split(/\r?\n/),
+                cons: cons.replace(/^\s*\n/gm, "").split(/\r?\n/),
                 rating: rating
             }
         }).then((response) => {
@@ -155,12 +181,14 @@ class GamePage extends Component {
     }
 
     render() {
-        console.log(this.state.Rating)
+        console.log(this.state.Rating);
+        console.log(this.state.avgCriticRating);
+        console.log(this.state.avgUserRating);
         //const genres = this.state.genres.join(',');
         //const platforms = this.state.platforms.join(',');
         if (!this.state.loaded) return "LOADING...";
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
-        const release_dates = new Date(this.state.release_dates[0].date).toLocaleDateString("en-US", options);
+        
         const dates = this.state.release_dates.map((item, key) => {
 
             const date = new Date(item.date);
@@ -175,6 +203,11 @@ class GamePage extends Component {
                 </div>)
 
         });
+        let release_dates;
+        if (this.state.release_dates.length != 0) {
+            release_dates = new Date(this.state.release_dates[0].date).toLocaleDateString("en-US", options);
+        }
+        
         const developers = this.state.developers.map((developer, key) => {
             return <p>{developer}</p>
         })
@@ -185,15 +218,15 @@ class GamePage extends Component {
             return <p>{genre}</p>
         })
 
-        var esrb_logo="";
+        var esrb_logo = "";
         console.log(this.state.esrb.rating)
-        switch(this.state.esrb.rating) {
+        switch (this.state.esrb.rating) {
             case "RP":
-                esrb_logo ="https://www.esrb.org/wp-content/uploads/2019/05/RP.svg";
-            break;
+                esrb_logo = "https://www.esrb.org/wp-content/uploads/2019/05/RP.svg";
+                break;
             case "EC":
-                esrb_logo ="https://en.wikipedia.org/wiki/File:ESRB_2013_Early_Childhood.svg";
-            break;
+                esrb_logo = "https://en.wikipedia.org/wiki/File:ESRB_2013_Early_Childhood.svg";
+                break;
             case "E":
                 esrb_logo = "https://www.esrb.org/wp-content/uploads/2019/05/E10plus.svg";
                 break;
@@ -202,14 +235,14 @@ class GamePage extends Component {
                 break;
             case "T":
                 esrb_logo = "https://www.esrb.org/wp-content/uploads/2019/05/T.svg";
-                break;  
+                break;
             case "M":
                 esrb_logo = "https://www.esrb.org/wp-content/uploads/2019/05/M.svg";
-                break;  
+                break;
             case "AO":
                 esrb_logo = "https://www.esrb.org/wp-content/uploads/2019/05/AO.svg";
-                break;  
-        default:
+                break;
+            default:
             // code block
         }
 
@@ -236,9 +269,130 @@ class GamePage extends Component {
             // code block
         }
 
+        const userReviews = this.state.userreviews.map((item, index) => {
+            const twmp = new Date(item.createdAt);
+            const date = twmp.toLocaleDateString("en-US", options);
+            let ratingText = "";
+            const n = item.rating;
+            switch(n) {
+                case 1:
+                    ratingText="Awful";
+                    break;
+                case 2:
+                    ratingText = "Very Bad";
+                    break;
+                case 3:
+                    ratingText = "Bad";
+                    break;
+                case 4:
+                    ratingText = "Unimpressive";
+                    break;
+                case 5:
+                    ratingText = "Average";
+                    break;
+                case 6:
+                    ratingText = "Fair";
+                    break;
+                case 7:
+                    ratingText = "Alright";
+                    break;
+                case 8:
+                    ratingText = "Good";
+                    break;
+                case 9:
+                    ratingText = "Great";
+                    break;
+                case 10:
+                    ratingText = "Superb";
+                    break;
+            }
+            const pros = item.pros.map((p, key1) => {
+                return <div id = {key1}>
+                    {p}
+                </div>
+            })
+            const cons = item.cons.map((c, key2) => {
+                return <div id={key2}>
+                    {c}
+                </div>
+            })
+            //const avatar = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTDEkHz-xRJmIvWAHQHFocosvA5DepYi_XApN55bIsFvKEcDzz57A&s";
+            console.log(date);
+            return (
+                <div className="row member-review-game" data-reactid="42">
+                    <div className="col-xs-3 col-md-2" data-reactid="43">
+                        <div className="media" data-reactid="44">
+                            <div className="media-left" data-reactid="45">
+                                <a href="/users/stoltenberg" target="_self" data-reactid="46">
+                                    <img alt="Profile image" height="45" width="45" src={item.user.avatar} />
+                                </a>
+                            </div>
+                            <div className="media-body" data-reactid="48">
+                                <a href="/users/themarklv" target="_self" data-reactid="49">
+                                    {item.user.username}
+                                                </a>
+
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-md-10" data-reactid="53">
+                        <h2 className="nomar-top member-review-rating" data-reactid="54">
+                            <span data-reactid="55">
+                                {ratingText}
+                                            <span
+                                    className="member-review-rating-word"
+                                    style={{ "WebkitFilter": "hue-rotate(-13deg)", "filter": "hue-rotate(-13deg)", "paddingLeft": "10px" }}>
+                                            {item.rating * 10}%
+                                            </span>
+                            </span>
+                            <small data-reactid="61">
+                                <time dateTime={twmp}>{date}</time>
+                            </small>
+                        </h2>
+                        <div className="member-review-game-text" data-reactid="63">
+                            <div className="" data-reactid="64">
+                                {item.review}
+                                            </div>
+                            <div className="row" data-reactid="65">
+                                <br data-reactid="66" />
+                                <div className="col-sm-6" data-reactid="67">
+                                    <strong className="text-green" data-reactid="68">Positive points</strong>
+                                    {pros}
+                                </div>
+                                <div className="col-sm-6" data-reactid="70">
+                                    <strong className="text-danger" data-reactid="71">Negative points</strong>
+                                    {cons}
+                                </div>
+                            </div>
+                        </div>
+                        {/* <div data-reactid="73">
+                            <span className="text-semibold" data-reactid="74">Was this review...?</span>
+                            <button className="btn btn-default btn-sm member-review-game-button" data-reactid="75">
+                                <div className="material-icons" data-reactid="76">lightbulb_outline</div>
+                                Useful?
+                                            </button>
+                        </div> */}
+                    </div>
+                </div>
+            )
+        })
+
+        const criticsReviews = this.state.criticreviews.map((item, index) => {
+            return (
+                <div>
+                    <a href={item.url} target="_blank"
+                        className="external-review-item external-review-item-superb ">
+                        <span>{item.sitename}</span>
+                        <div className="pull-right">{item.rating}%</div>
+                        <div className="external-review-item-progress" style={{ "width": `${item.rating}%` }}></div>
+                    </a>
+                </div>
+            ) 
+        })
+
         return (
             <div>
-                <Header getUser={this.getUser}/>
+                <Header getUser={this.getUser} />
                 <div className="main-container center" id="main-contain">
 
                     <span id="twitch_acc_merge" className="if_logged_in"></span><br />
@@ -263,7 +417,7 @@ class GamePage extends Component {
                                                 </h1>
                                                 <h2 className="banner-subheading">
                                                     {release_dates}
-                                                    <span >  23 days ago</span>
+                                                    {/* <span >  23 days ago</span> */}
                                                 </h2>
                                                 <h3 className="banner-subsubheading">
                                                     {this.state.developers[0]}
@@ -425,17 +579,17 @@ class GamePage extends Component {
                                     <div className="gamepage-gauge col-2 container">
                                         <div className="row">
                                             <div className="row">
-                                                <PercentageCircle score='56' size="small" className="col" />
-                                                <div className="col gauge-single-info text-muted" style={{ "marginTop": "15%" }} data-reactid="117">Need more ratings</div>
+                                                {this.state.avgUserRating ? <PercentageCircle score={`${this.state.avgUserRating}`} size="small" className="col" /> : null}
+                                                <div className="col gauge-single-info text-muted" style={{ "marginTop": "15%" }} data-reactid="117">
+                                                {this.state.avgUserRating ? `Based on ${this.state.userreviews.length + 1} reviews` :  "Need more ratings"}
+                                                </div>
                                             </div>
 
                                             <div className="row">
-                                                <PercentageCircle score='56' size="small" />
+                                                {this.state.avgCriticRating ? <PercentageCircle score={`${this.state.avgCriticRating}`} size="small" className="col"  />: null}
+                                                
                                                 <div className="gauge-twin-info text-muted" data-reactid="118" style={{ "marginTop": "15%" }}>
-                                                    Based on 10
-                                                    <div className="text-semibold" data-reactid="121">
-                                                        critic ratings
-                                                    </div>
+                                                    {this.state.avgCriticRating ? `Based on ${this.state.criticreviews.length + 1} reviews` : "Need more ratings"}
                                                 </div>
                                             </div>
                                         </div>
@@ -443,7 +597,7 @@ class GamePage extends Component {
                                         <hr data-reactid="122" /><br data-reactid="123" />
                                         <div data-reactid="124">
                                             <strong className="block mar-md-bottom" data-reactid="125">How would you rate this game?</strong>
-                                            <Rating getRating={this.getRating}/>
+                                            <Rating getRating={this.getRating} />
                                         </div>
                                     </div>
                                 </div>
@@ -483,23 +637,23 @@ class GamePage extends Component {
                                                 </div>
                                                 <div className="col-md-10 " data-reactid="8">
                                                     <div className="form-group" data-reactid="9">
-                                                        <textarea className="form-control" name="review"/>
+                                                        <textarea className="form-control" name="review" />
                                                     </div>
                                                     <div className="row" data-reactid="11">
                                                         <div className="col-md-6" data-reactid="12">
                                                             <label data-reactid="13">Positive Points</label>
                                                             <textarea className="form-control" placeholder="Some things you liked..." name="pros" />
-                                                            
+
                                                         </div>
                                                         <div className="col-md-6" data-reactid="15">
                                                             <label data-reactid="16">Negative Points</label>
                                                             <textarea className="form-control" placeholder="Some things you didn't..." name="cons" />
-                                                            
+
                                                         </div>
                                                     </div>
                                                     <div className="pull-right mar-lg-top" data-reactid="18">
                                                         <strong className="rating-stars-label" data-reactid="19">How would you rate it?</strong>
-                                                        <Rating name = "rating" getRating={this.getRating}/>
+                                                        <Rating name="rating" getRating={this.getRating} />
                                                         <button className="pull-right mar-lg-left btn btn-sm btn-primary" type="submit">Post</button>
                                                     </div>
                                                 </div>
@@ -509,101 +663,14 @@ class GamePage extends Component {
                                     <hr />
                                 </div>
                                 <div className="clearfix"></div>
-                                <div className="row member-review-game" data-reactid="42">
-                                    <div className="col-xs-3 col-md-2" data-reactid="43">
-                                        <div className="media" data-reactid="44">
-                                            <div className="media-left" data-reactid="45">
-                                                <a href="/users/stoltenberg" target="_self" data-reactid="46">
-                                                    <img alt="Profile image" height="45" width="45" data-reactid="47" />
-                                                </a>
-                                            </div>
-                                            <div className="media-body" data-reactid="48">
-                                                <a href="/users/themarklv" target="_self" data-reactid="49">
-                                                    Themarklv
-                                                </a>
-                                                <div className="text-muted" data-reactid="50">
-                                                    6 reviews
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-10" data-reactid="53">
-                                        <h2 className="nomar-top member-review-rating" data-reactid="54">
-                                            <span data-reactid="55">
-                                                Great
-                                            <span
-                                                    className="member-review-rating-word"
-                                                    style={{ "WebkitFilter": "hue-rotate(-13deg)", "filter": "hue-rotate(-13deg)" }} data-reactid="58">
-                                                    100%
-                                            </span>
-                                            </span>
-                                            <small data-reactid="61">
-                                                <time dateTime="U" data-reactid="62">December 22nd, 2018</time>
-                                            </small>
-                                        </h2>
-                                        <div className="member-review-game-text" data-reactid="63">
-                                            <div className="" data-reactid="64">
-                                                THE LAST GAME IN ITS SERIES. but they're good. also, Matpat made a theory about it.
-                                            </div>
-                                            <div className="row" data-reactid="65">
-                                                <br data-reactid="66" />
-                                                <div className="col-sm-6" data-reactid="67">
-                                                    <strong className="text-green" data-reactid="68">Positive points</strong>
-                                                    <div className="" data-reactid="69">
-                                                        The bittersweet good ending which is made by destroying and galime, and darkon.
-                                                        </div>
-                                                </div>
-                                                <div className="col-sm-6" data-reactid="70">
-                                                    <strong className="text-danger" data-reactid="71">Negative points</strong>
-                                                    <div className="" data-reactid="72">uhh, I don't know what to say here.</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div data-reactid="73">
-                                            <span className="text-semibold" data-reactid="74">Was this review...?</span>
-                                            <button className="btn btn-default btn-sm member-review-game-button" data-reactid="75">
-                                                <div className="material-icons" data-reactid="76">lightbulb_outline</div>
-                                                Useful?
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
+                                {userReviews}
                             </div>
                             <aside className="col-sm-3">
                                 <div className="clearfix"></div>
                                 <div className="loaded">
                                     <div className="mar-lg-bottom">
                                         <h3 className="underscratch underscratch-green mar-lg-bottom" data-scrollspy="">Game Critics Reviews</h3>
-                                        <div>
-                                            <a href="https://www.dualshockers.com/indivisible-review-ps4-pc-xbox-one-switch/" target="_blank"
-                                                className="external-review-item external-review-item-superb ">
-                                                <span>DualShockers</span>
-                                                <div className="pull-right">95%</div>
-                                                <div className="external-review-item-progress" style={{ "width": "95%" }}></div>
-                                            </a>
-                                        </div>
-                                        <div>
-                                            <a href="https://www.godisageek.com/reviews/indivisible-review/" target="_blank"
-                                                className="external-review-item external-review-item-superb ">
-                                                <span>God is a Geek</span>
-                                                <div className="pull-right">90%</div>
-                                                <div className="external-review-item-progress" style={{ "width": "90%" }}></div>
-                                            </a>
-                                        </div>
-                                        <div>
-                                            <a href="https://gamingbolt.com/indivisible-review-bending-genres" target="_blank"
-                                                className="external-review-item external-review-item-great ">
-                                                <span>Gamingbolt</span>
-                                                <div className="pull-right">80%</div>
-                                                <div className="external-review-item-progress" style={{ "width": "80%" }}></div>
-                                            </a>
-                                        </div>
-                                        <div className="mar-md-top mar-lg-bottom">
-                                            <a href="/games/indivisible/reviews" className="text-green cursor-pointer">
-                                                Read all 10 critic reviews
-                                                </a>
-                                        </div>
+                                        {criticsReviews}
                                     </div>
                                 </div>
                                 <h3 className="underscratch underscratch-red">
@@ -618,7 +685,7 @@ class GamePage extends Component {
                                     {publishers}
                                 </div>
                                 <div className="optimisly-game-extrainfo1">
-                                   
+
                                     <label className="mar-lg-top">Genre:</label>
                                     {genres}
                                 </div>
@@ -666,8 +733,8 @@ class GamePage extends Component {
                                 <span className="hide" itemProp="contentRating">PEGI {this.state.pegi.rating}</span>
                                 <div>
                                     <span className="hide" itemProp="contentRating">PEGI {this.state.pegi.rating}</span>
-                                    <img alt={`PEGI ${this.state.pegi.rating}`} 
-                                    title={`PEGI ${this.state.pegi.rating}`} width="60px" className="mar-md-right gamepage-rating-image"
+                                    <img alt={`PEGI ${this.state.pegi.rating}`}
+                                        title={`PEGI ${this.state.pegi.rating}`} width="60px" className="mar-md-right gamepage-rating-image"
                                         src={pegi_logo} />
                                 </div>
                                 <div className="clearfix mar-lg-bottom">

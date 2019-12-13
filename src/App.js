@@ -10,6 +10,7 @@ import LoginPage from './Containers/LoginPage/LoginPage';
 import RegisterPage from './Containers/RegisterPage/RegisterPage';
 import AdminPage from './Containers/AdminPage/AdminPage';
 import GamePage from './Containers/GamePage/GamePage';
+import SearchPage from './Containers/SearchPage/SearchPage'
 import axios from './axios';
 
 
@@ -40,7 +41,7 @@ class App extends Component {
                 });
                 if (this.state.role == 0)
                     this.props.history.push("/admin");
-                else 
+                else
                     this.props.history.push("/");
             }
             else {
@@ -74,9 +75,16 @@ class App extends Component {
                     />
                     <Route
                         exact
+                        path="/search"
+                        render={props => {
+                            return <SearchPage {...props} />
+                        }}
+                    />
+                    <Route
+                        exact
                         path="/login"
                         render={props => {
-                            return <LoginPage {...props} _onLogin={this._onLogin}/>
+                            return <LoginPage {...props} _onLogin={this._onLogin} />
                         }}
                     />
                     <Route

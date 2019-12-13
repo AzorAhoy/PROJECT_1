@@ -15,23 +15,33 @@ import axios from '../../axios';
 
 class HomePage extends Component {
     state = {
-        list : [],
-        titles: []
+        list: [],
+        titles: [],
+        rating: []
     }
-    
+
     componentDidMount() {
         axios.get("http://localhost:6900/api/game/")
-        .then(data => {
-            const list = data.data.data
-            console.log(list);
+            .then(data => {
+                const list = data.data.data
+                console.log(list);
 
-            this.setState({
-                list
+                this.setState({
+                    list
+                });
+            })
+            .catch(err => {
+                console.log(err);
             });
-        })
-        .catch(err => {
-            console.log(err);
-        });
+
+        axios.get("http://localhost:6900/api/userreview/")
+            .then(data => {
+                console.log(data.data.result);
+                this.setState({rating: data.data.result});
+            })
+            .catch(err => {
+                console.log(err);
+            })
 
         let tempArr = ["1"];
         tempArr.push("1");
@@ -45,15 +55,19 @@ class HomePage extends Component {
 
         // for (let index = 0; index < this.state.list.length; index++) {
         //     tempArr.push(this.state.list[index].title + "");
-            
+
         // }
         //this.state.list.map((item) => tempArr.push(item.title));
-        this.setState({titles: tempArr});
+        this.setState({ titles: tempArr });
         console.log(tempArr)
     }
 
     render() {
         const LIST1 = this.state.list.map((item, key) => {
+            console.log(item._id);
+            const rating = this.state.rating.find(i => i._id === `${item._id}`);
+            if (rating)
+                console.log(rating.avgRating);
             return (
                 <div className="col-sm-5ths slick-slide slick-cloned" style={{ "width": "295px" }}
                 >
@@ -62,7 +76,7 @@ class HomePage extends Component {
                         <img className="img-responsive cover_uniform game-card-image cover_uniform cover_uniform" src={item.cover} />
                         <div className="game-card-overlay">Read<br />More</div>
                         <div className="game-card-caption">
-                            <div className="game-card-aside">60%</div>
+                            <div className="game-card-aside">{rating ? `${Math.round(rating.avgRating * 10)}%`: null}</div>
                             <p className="game-card-name">{item.title}</p>
                             <small className="game-card-subtitle">{item.genres.join(",")}</small>
                         </div>
@@ -73,7 +87,7 @@ class HomePage extends Component {
 
         return (
             <div>
-                <Header suggestions={this.state.titles}/>
+                <Header suggestions={this.state.titles} />
                 <h3 className="underscratch underscratch-yellow">Popular Games Right Now</h3>
                 <div className="slick-home slick-coverflow slick-initialized slick-slider">
                     <div className="slick-arrow-prev slick-arrow" style={{ "display": "block" }}>
@@ -89,7 +103,7 @@ class HomePage extends Component {
                     </div>
                 </div>
 
-                <h3 className="underscratch underscratch-green"><a href="/reviews"><span>Recently Reviewed</span></a></h3>
+                {/* <h3 className="underscratch underscratch-green"><a href="/reviews"><span>Recently Reviewed</span></a></h3>
                 <div className="loaded">
                     <div className="review-panels">
                         <div className="row">
@@ -187,10 +201,10 @@ class HomePage extends Component {
 
                             </div>
                         </div>
-                    </div>
-                </div>
-                );
-            }
-        }
-        
+                    </div> */}
+            </div>
+        );
+    }
+}
+
 export default HomePage;

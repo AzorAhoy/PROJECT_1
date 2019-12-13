@@ -5,7 +5,7 @@ class Rating extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            rating: this.props.rating || 0,
+            rating: this.props.rating || null,
             temp_rating: 0
         }
     }

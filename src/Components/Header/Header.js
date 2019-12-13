@@ -58,11 +58,12 @@ class Header extends Component {
     toggleOpen = () => this.setState({ isOpen: !this.state.isOpen });
     render() {
         const menuClass = `dropdown-menu${this.state.isOpen ? " show" : ""}`;
+        console.log(this.state.suggestions);
         return (
             <div>
                 <nav className="navbar navbar-expand navbar-dark bg-dark" >
                     <div className="">
-                        <a className="navbar-brand" href="#">
+                        <a className="navbar-brand" href="/">
                             <p>VIDEO GAME</p>
                         </a> 
                     </div>
@@ -71,10 +72,15 @@ class Header extends Component {
                     </button>
 
                     <div className="collapse navbar-collapse" id="navbarTogglerDemo02">
-                        <Autocomplete
+                        {/* <Autocomplete
                             suggestions={this.state.suggestions}
-                        />
+                        /> */}
 
+                    </div>
+                    <div>
+                        <button className="btn btn-secondary" type="button">
+                            <a href="/search">Search</a>
+                        </button>
                     </div>
                     <div className="dropdown">
                         <button className="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -96,6 +102,7 @@ class Header extends Component {
                             <a className="dropdown-item" href="#">Something else here</a>
                         </div>
                     </div>
+
                     {this.state.id ?
                         <div className="text-white">
                             <span>welcome, {this.state.username}</span>
